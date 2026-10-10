@@ -19,7 +19,7 @@ Vite, React and TypeScript on the front end, with Supabase Postgres as the back 
 
 ## Security model
 
-All tables have RLS enabled and every client grant is revoked. The client only calls `SECURITY DEFINER` RPCs (`get_group`, `save_expense`, …), and each one is keyed by the group's random 12-character invite code. Anyone holding a group's link can view and edit that group, but nobody can list or reach other groups. Since there are no accounts, every change is written to an `activity` log (attributed to the member the device says it is) so the group can see who did what and undo deletions or edits. Receipts go to a public-read `receipts` storage bucket. Anyone can upload into an existing group's folder, but nobody can list the bucket, and each file path contains a random UUID. The schema is in `supabase/migrations/`.
+All tables have RLS enabled and every client grant is revoked. The client only calls `SECURITY DEFINER` RPCs (`get_group`, `save_expense`, …), and each one is keyed by the group's random 12-character invite code. Anyone holding a group's link can view and edit that group, but nobody can list or reach other groups. Since there are no accounts, every change is written to an `activity` log (attributed to the member the device says it is) so the group can see who did what and undo deletions or edits. Receipts go to a public-read `receipts` storage bucket, in a random per-group folder that is unrelated to the invite code, so a receipt link never reveals how to reach the group. Anyone can upload into an existing group's folder, but nobody can list the bucket, and each file path contains a random UUID. The schema is in `supabase/migrations/`.
 
 ## Develop
 

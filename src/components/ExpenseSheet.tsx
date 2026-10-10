@@ -263,7 +263,7 @@ export default function ExpenseSheet({ code, data, me, expense, onClose, onSaved
     setError('')
     try {
       for (const f of Array.from(files)) {
-        const path = await uploadReceipt(code, f)
+        const path = await uploadReceipt(group.receipt_folder, f)
         setReceipts((r) => [...r, path])
       }
     } catch (e) {

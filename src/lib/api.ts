@@ -8,6 +8,8 @@ export interface Group {
   emoji: string
   currency: string
   invite_code: string
+  /** Storage folder for this group's receipts; deliberately unrelated to the invite code. */
+  receipt_folder: string
   created_at: string
 }
 

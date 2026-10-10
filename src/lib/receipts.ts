@@ -22,11 +22,11 @@ async function prepare(file: File): Promise<{ blob: Blob; ext: string; type: str
   return { blob: file, ext: ext === 'jpeg' ? 'jpg' : ext, type: file.type }
 }
 
-/** Uploads into the group's folder and returns the storage path to save on the expense. */
-export async function uploadReceipt(code: string, file: File): Promise<string> {
+/** Uploads into the group's receipt folder and returns the storage path to save on the expense. */
+export async function uploadReceipt(folder: string, file: File): Promise<string> {
   const { blob, ext, type } = await prepare(file)
   if (blob.size > 5 * 1024 * 1024) throw new Error('That file is over 5 MB.')
-  const path = `${code}/${crypto.randomUUID()}.${ext}`
+  const path = `${folder}/${crypto.randomUUID()}.${ext}`
   const { error } = await supabase.storage.from(BUCKET).upload(path, blob, { contentType: type })
   if (error) throw new Error(error.message)
   return path
