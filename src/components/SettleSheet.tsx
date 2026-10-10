@@ -99,6 +99,7 @@ export default function SettleSheet({ code, data, me, initial, onClose, onSaved 
           className="input"
           placeholder="Note (optional) — e.g. paid in cash"
           value={note}
+          maxLength={200}
           onChange={(e) => setNote(e.target.value)}
         />
 

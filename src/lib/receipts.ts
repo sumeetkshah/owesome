@@ -28,7 +28,13 @@ export async function uploadReceipt(folder: string, file: File): Promise<string>
   if (blob.size > 5 * 1024 * 1024) throw new Error('That file is over 5 MB.')
   const path = `${folder}/${crypto.randomUUID()}.${ext}`
   const { error } = await supabase.storage.from(BUCKET).upload(path, blob, { contentType: type })
-  if (error) throw new Error(error.message)
+  if (error) {
+    // The upload policy refuses once a group has 50 receipts or the app is getting too many uploads.
+    if (/row-level security|policy/i.test(error.message)) {
+      throw new Error('This group has reached its receipt limit, or uploads are busy right now. Try again later.')
+    }
+    throw new Error(error.message)
+  }
   return path
 }
 

@@ -49,6 +49,11 @@ const cleanAmount = (v: string) => v.replace(/[^0-9.]/g, '').replace(/(\..*?)\..
 
 let itemKey = 0
 
+// Mirror the database limits so people get a clear message instead of a constraint error.
+const MAX_RECEIPTS = 10
+const MAX_ITEMS = 40
+const MAX_NOTES = 500
+
 export default function ExpenseSheet({ code, data, me, expense, onClose, onSaved }: Props) {
   const { members, group } = data
   const groupCur = group.currency
@@ -259,10 +264,15 @@ export default function ExpenseSheet({ code, data, me, expense, onClose, onSaved
 
   const addReceipts = async (files: FileList | null) => {
     if (!files?.length) return
+    const room = MAX_RECEIPTS - receipts.length
+    if (files.length > room) {
+      setError(`You can attach up to ${MAX_RECEIPTS} receipts to one expense.`)
+      if (room <= 0) return
+    }
     setUploading(true)
     setError('')
     try {
-      for (const f of Array.from(files)) {
+      for (const f of Array.from(files).slice(0, room)) {
         const path = await uploadReceipt(group.receipt_folder, f)
         setReceipts((r) => [...r, path])
       }
@@ -627,25 +637,27 @@ export default function ExpenseSheet({ code, data, me, expense, onClose, onSaved
                 </button>
               </div>
             ))}
-            <label className={`receipt-add ${uploading ? 'busy' : ''}`}>
-              <input
-                type="file"
-                accept="image/*,application/pdf"
-                multiple
-                hidden
-                disabled={uploading}
-                onChange={(e) => {
-                  addReceipts(e.target.files)
-                  e.target.value = ''
-                }}
-              />
-              <span>{uploading ? '…' : '📎'}</span>
-              <span className="small">{uploading ? 'Uploading' : 'Add'}</span>
-            </label>
+            {receipts.length < MAX_RECEIPTS && (
+              <label className={`receipt-add ${uploading ? 'busy' : ''}`}>
+                <input
+                  type="file"
+                  accept="image/*,application/pdf"
+                  multiple
+                  hidden
+                  disabled={uploading}
+                  onChange={(e) => {
+                    addReceipts(e.target.files)
+                    e.target.value = ''
+                  }}
+                />
+                <span>{uploading ? '…' : '📎'}</span>
+                <span className="small">{uploading ? 'Uploading' : 'Add'}</span>
+              </label>
+            )}
           </div>
         </div>
 
-        <textarea className="textarea" rows={2} placeholder="Notes (optional)" value={notes} onChange={(e) => setNotes(e.target.value)} />
+        <textarea className="textarea" rows={2} placeholder="Notes (optional)" value={notes} maxLength={MAX_NOTES} onChange={(e) => setNotes(e.target.value)} />
 
         {error && <div className="error-text">{error}</div>}
 
@@ -752,12 +764,16 @@ function ItemsEditor(p: ItemsEditorProps) {
           </div>
         </div>
       ))}
-      <button
-        className="btn btn-ghost btn-sm"
-        onClick={() => p.setItems((items) => [...items, { key: itemKey++, name: '', amount: '', members: allIds }])}
-      >
-        + Add item
-      </button>
+      {p.items.length < MAX_ITEMS ? (
+        <button
+          className="btn btn-ghost btn-sm"
+          onClick={() => p.setItems((items) => [...items, { key: itemKey++, name: '', amount: '', members: allIds }])}
+        >
+          + Add item
+        </button>
+      ) : (
+        <div className="faint small center">Up to {MAX_ITEMS} items per bill</div>
+      )}
 
       <div className="extras-grid">
         <label className="field">
