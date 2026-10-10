@@ -30,3 +30,4 @@ dist-ssr
 # local tooling
 .claude/settings.local.json
 .vercel
+.env*
