@@ -2,10 +2,15 @@
 
 Split group expenses on trips and work travel. There are no accounts: create a group, share the invite link, and each person picks their name. The device remembers who you are.
 
-- Equal, exact, percentage and share-based splits
+- Equal, exact, percentage, share-based and **itemised** splits (with tax, service charge, tip and discount spread in proportion)
 - Multiple payers on one expense
+- **Foreign-currency expenses**, converted at a live or manually entered rate
+- **Refunds and income** that flow back to the group
+- **Receipt photos and PDFs** attached to expenses
 - Preset and custom categories, with per-category insights
-- Settle up with the fewest transfers
+- Settle up with the fewest transfers, **UPI pay links** and **WhatsApp/SMS nudges**
+- **CSV and PDF export**, filtered by person and date range, for reimbursement claims
+- Installable to the home screen (PWA)
 
 ## Stack
 
@@ -13,7 +18,7 @@ Vite, React and TypeScript on the front end, with Supabase Postgres as the back 
 
 ## Security model
 
-All tables have RLS enabled and every client grant is revoked. The client only calls `SECURITY DEFINER` RPCs (`get_group`, `save_expense`, …), and each one is keyed by the group's random 12-character invite code. Anyone holding a group's link can view and edit that group, but nobody can list or reach other groups. The schema is in `supabase/migrations/`.
+All tables have RLS enabled and every client grant is revoked. The client only calls `SECURITY DEFINER` RPCs (`get_group`, `save_expense`, …), and each one is keyed by the group's random 12-character invite code. Anyone holding a group's link can view and edit that group, but nobody can list or reach other groups. Receipts go to a public-read `receipts` storage bucket. Anyone can upload into an existing group's folder, but nobody can list the bucket, and each file path contains a random UUID. The schema is in `supabase/migrations/`.
 
 ## Develop
 

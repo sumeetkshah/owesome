@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react'
 import type { GroupData } from '../lib/api'
 import { findCategory } from '../lib/categories'
-import { formatMoney, fromMinor, memberTotals, toMinor } from '../lib/money'
+import { formatMoney, fromMinor, memberTotals, signedMinor } from '../lib/money'
 import { Avatar } from './ui'
 
 // Validated (dark surface #161618): adjacent CVD ΔE 22.6, both >= 3:1 contrast.
@@ -18,12 +18,13 @@ export default function Insights({ data, me }: { data: GroupData; me: string }) 
     for (const e of data.expenses) {
       const v =
         scope === 'group'
-          ? toMinor(e.amount)
-          : toMinor(e.splits.find((s) => s.member_id === me)?.amount ?? 0)
+          ? signedMinor(e)
+          : signedMinor(e, e.splits.find((s) => s.member_id === me)?.amount ?? 0)
       if (v) totals.set(e.category, (totals.get(e.category) ?? 0) + v)
     }
     const rows = [...totals]
       .map(([key, v]) => ({ ...findCategory(key, data.categories), value: v }))
+      .filter((r) => r.value > 0)
       .sort((a, b) => b.value - a.value)
     const sum = rows.reduce((a, r) => a + r.value, 0)
     return { rows, sum }

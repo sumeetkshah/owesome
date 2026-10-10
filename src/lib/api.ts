@@ -1,6 +1,7 @@
 import { supabase } from './supabase'
 
-export type SplitType = 'equal' | 'exact' | 'percent' | 'shares'
+export type SplitType = 'equal' | 'exact' | 'percent' | 'shares' | 'itemized'
+export type ExpenseKind = 'expense' | 'refund'
 
 export interface Group {
   name: string
@@ -14,6 +15,7 @@ export interface Member {
   id: string
   name: string
   color: number
+  upi_id: string | null
   created_at: string
 }
 
@@ -26,6 +28,8 @@ export interface Category {
 export interface Payer {
   member_id: string
   amount: number
+  /** In the expense's own currency when it differs from the group's. */
+  original_amount?: number | null
 }
 
 export interface Split {
@@ -34,8 +38,24 @@ export interface Split {
   weight: number | null
 }
 
+export interface ItemLine {
+  name: string
+  amount: number
+  members: string[]
+}
+
+/** Editor state saved with an expense so it can be reopened exactly as entered. */
+export interface ExpenseMeta {
+  items?: ItemLine[]
+  tax_pct?: number
+  service_pct?: number
+  tip?: number
+  discount?: number
+}
+
 export interface Expense {
   id: string
+  kind: ExpenseKind
   description: string
   amount: number
   category: string
@@ -44,6 +64,11 @@ export interface Expense {
   notes: string | null
   created_by: string | null
   created_at: string
+  currency: string | null
+  fx_rate: number
+  original_amount: number | null
+  meta: ExpenseMeta | null
+  receipts: string[]
   payers: Payer[]
   splits: Split[]
 }
@@ -68,6 +93,12 @@ export interface GroupData {
 
 export interface ExpenseInput {
   id?: string
+  kind: ExpenseKind
+  currency: string
+  fx_rate: number
+  original_amount: number
+  meta?: ExpenseMeta
+  receipts: string[]
   description: string
   amount: number
   category: string
@@ -92,7 +123,13 @@ function normalise(data: GroupData): GroupData {
     expenses: data.expenses.map((e) => ({
       ...e,
       amount: Number(e.amount),
-      payers: e.payers.map((p) => ({ ...p, amount: Number(p.amount) })),
+      fx_rate: Number(e.fx_rate),
+      original_amount: e.original_amount == null ? null : Number(e.original_amount),
+      payers: e.payers.map((p) => ({
+        ...p,
+        amount: Number(p.amount),
+        original_amount: p.original_amount == null ? null : Number(p.original_amount),
+      })),
       splits: e.splits.map((s) => ({
         ...s,
         amount: Number(s.amount),
@@ -114,6 +151,8 @@ export const api = {
     }),
   getGroup: async (code: string) => normalise(await rpc<GroupData>('get_group', { p_code: code })),
   addMember: (code: string, name: string) => rpc<Member>('add_member', { p_code: code, p_name: name }),
+  updateMember: (code: string, id: string, name: string, upi: string) =>
+    rpc<Member>('update_member', { p_code: code, p_id: id, p_name: name, p_upi: upi }),
   updateGroup: (code: string, name: string, emoji: string) =>
     rpc<void>('update_group', { p_code: code, p_name: name, p_emoji: emoji }),
   addCategory: (code: string, name: string, emoji: string) =>

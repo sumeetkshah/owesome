@@ -1,10 +1,14 @@
 import { useEffect, useState } from 'react'
 
-export type Route = { name: 'home' } | { name: 'new' } | { name: 'group'; code: string }
+export type Route =
+  | { name: 'home' }
+  | { name: 'new' }
+  | { name: 'group'; code: string }
+  | { name: 'report'; code: string }
 
 function parse(path: string): Route {
-  const m = path.match(/^\/g\/([a-z0-9]+)\/?$/i)
-  if (m) return { name: 'group', code: m[1].toLowerCase() }
+  const m = path.match(/^\/g\/([a-z0-9]+)(\/report)?\/?$/i)
+  if (m) return { name: m[2] ? 'report' : 'group', code: m[1].toLowerCase() }
   if (path === '/new') return { name: 'new' }
   return { name: 'home' }
 }

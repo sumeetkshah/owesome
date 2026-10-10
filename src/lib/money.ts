@@ -50,8 +50,10 @@ export function netBalances(memberIds: string[], expenses: Expense[], settlement
   const net = new Map<string, number>(memberIds.map((id) => [id, 0]))
   const add = (id: string, v: number) => net.set(id, (net.get(id) ?? 0) + v)
   for (const e of expenses) {
-    for (const p of e.payers) add(p.member_id, toMinor(p.amount))
-    for (const s of e.splits) add(s.member_id, -toMinor(s.amount))
+    // A refund flows the other way: whoever received it now holds the group's money.
+    const sign = e.kind === 'refund' ? -1 : 1
+    for (const p of e.payers) add(p.member_id, sign * toMinor(p.amount))
+    for (const s of e.splits) add(s.member_id, -sign * toMinor(s.amount))
   }
   for (const s of settlements) {
     add(s.from_member, toMinor(s.amount))
@@ -91,10 +93,22 @@ export function memberTotals(memberId: string, expenses: Expense[]) {
   let paid = 0
   let share = 0
   for (const e of expenses) {
-    for (const p of e.payers) if (p.member_id === memberId) paid += toMinor(p.amount)
-    for (const s of e.splits) if (s.member_id === memberId) share += toMinor(s.amount)
+    const sign = e.kind === 'refund' ? -1 : 1
+    for (const p of e.payers) if (p.member_id === memberId) paid += sign * toMinor(p.amount)
+    for (const s of e.splits) if (s.member_id === memberId) share += sign * toMinor(s.amount)
   }
   return { paid, share }
 }
 
-export const CURRENCIES = ['INR', 'USD', 'EUR', 'GBP', 'AED', 'SGD', 'THB', 'JPY', 'AUD', 'CAD', 'IDR', 'LKR', 'MYR', 'CHF']
+/** Signed group-currency amount: refunds count against spend. */
+export const signedMinor = (e: Expense, amount = e.amount) => (e.kind === 'refund' ? -1 : 1) * toMinor(amount)
+
+/** Like `allocate`, but also handles a negative total (e.g. a discount spread across people). */
+export function allocateSigned(total: number, weights: number[]): number[] {
+  return total < 0 ? allocate(-total, weights).map((v) => -v) : allocate(total, weights)
+}
+
+export const CURRENCIES = [
+  'INR', 'USD', 'EUR', 'GBP', 'AED', 'SGD', 'THB', 'JPY', 'AUD', 'CAD', 'IDR', 'LKR', 'MYR', 'CHF',
+  'NPR', 'VND', 'HKD', 'NZD', 'QAR', 'SAR', 'KRW', 'CNY', 'MVR', 'TRY', 'ZAR', 'BDT', 'PHP', 'OMR',
+]
