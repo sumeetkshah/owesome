@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import ExpenseSheet from '../components/ExpenseSheet'
+import History from '../components/History'
 import Insights from '../components/Insights'
 import ProfileSheet from '../components/ProfileSheet'
 import SettleSheet from '../components/SettleSheet'
@@ -10,10 +11,10 @@ import { api, type Expense, type GroupData, type Member, type Settlement } from 
 import { findCategory } from '../lib/categories'
 import { getSaved, saveGroup } from '../lib/identity'
 import { formatMoney, fromMinor, netBalances, signedMinor, simplifyDebts, toMinor, type Transfer } from '../lib/money'
-import { nudgeText, sendNudge, upiLink } from '../lib/upi'
+import { nudgeText, sendNudge } from '../lib/nudge'
 import { inviteUrl, navigate } from '../lib/router'
 
-type Tab = 'expenses' | 'balances' | 'insights'
+type Tab = 'expenses' | 'balances' | 'insights' | 'history'
 type SheetState =
   | { kind: 'expense'; expense?: Expense }
   | { kind: 'settle'; initial?: { from: string; to: string; amount: number } }
@@ -111,7 +112,7 @@ export default function Group({ code }: { code: string }) {
       {justCreated && data.expenses.length === 0 && <InviteCard code={code} name={data.group.name} />}
 
       <div className="tabs" role="tablist">
-        {(['expenses', 'balances', 'insights'] as Tab[]).map((t) => (
+        {(['expenses', 'balances', 'insights', 'history'] as Tab[]).map((t) => (
           <button key={t} role="tab" aria-selected={tab === t} className={tab === t ? 'on' : ''} onClick={() => setTab(t)}>
             {t}
           </button>
@@ -127,10 +128,10 @@ export default function Group({ code }: { code: string }) {
           data={data}
           me={meMember.id}
           onSettle={(initial) => setSheet({ kind: 'settle', initial })}
-          onProfile={() => setSheet({ kind: 'profile' })}
         />
       )}
       {tab === 'insights' && <Insights data={data} me={meMember.id} />}
+      {tab === 'history' && <History code={code} data={data} me={meMember.id} onRestored={load} />}
 
       <div className="fab-wrap">
         {tab === 'balances' ? (
@@ -206,7 +207,7 @@ function GroupHeader({
       <div className="faint" style={{ fontSize: 12.5 }}>
         Viewing as <strong className="muted">{me.name}</strong> ·{' '}
         <button className="link" onClick={onProfile}>
-          {me.upi_id ? 'edit profile' : 'add your UPI ID'}
+          edit profile
         </button>{' '}
         ·{' '}
         <button className="link" onClick={onSwitch}>
@@ -389,8 +390,8 @@ function Activity({
 
   const removeSettlement = async (id: string) => {
     try {
-      await api.deleteSettlement(code, id)
-      toast('Payment removed')
+      await api.deleteSettlement(code, id, me)
+      toast('Payment removed — you can restore it from History')
       onReload()
     } catch (e) {
       toast((e as Error).message)
@@ -511,13 +512,11 @@ function Balances({
   data,
   me,
   onSettle,
-  onProfile,
 }: {
   code: string
   data: GroupData
   me: string
   onSettle: (t: { from: string; to: string; amount: number }) => void
-  onProfile: () => void
 }) {
   const cur = data.group.currency
   const net = netBalances(data.members.map((m) => m.id), data.expenses, data.settlements)
@@ -526,8 +525,6 @@ function Balances({
   const label = (id: string) => (id === me ? 'You' : member(id).name)
   const mine = transfers.filter((t) => t.from === me || t.to === me)
   const others = transfers.filter((t) => t.from !== me && t.to !== me)
-  const meMember = member(me)
-  const owedToMe = transfers.filter((t) => t.to === me)
 
   const nudge = (list: Transfer[]) =>
     sendNudge(
@@ -539,55 +536,36 @@ function Balances({
           debtor: member(t.from).name,
           creditor: member(t.to).name,
           amount: fromMinor(t.amount),
-          upi: member(t.to).upi_id,
         })),
       ),
     )
 
-  const transferRow = (t: Transfer) => {
-    const payee = member(t.to)
-    const canUpi = t.from === me && cur === 'INR' && !!payee.upi_id
-    return (
-      <div key={`${t.from}-${t.to}`} className="transfer">
-        <div className="row" style={{ gap: 10 }}>
-          <Avatar member={member(t.from)} size="sm" />
-          <span className="faint">→</span>
-          <Avatar member={payee} size="sm" />
-          <span className="grow" style={{ fontSize: 14 }}>
-            <strong>{label(t.from)}</strong> <span className="muted">{t.from === me ? 'pay' : 'pays'}</span>{' '}
-            <strong>{label(t.to)}</strong>
-          </span>
-          <span className="num" style={{ fontWeight: 700 }}>
-            {formatMoney(fromMinor(t.amount), cur)}
-          </span>
-        </div>
-        <div className="transfer-actions">
-          {canUpi && (
-            <a
-              className="btn btn-primary btn-sm"
-              href={upiLink({
-                vpa: payee.upi_id!,
-                name: payee.name,
-                amount: fromMinor(t.amount),
-                note: `OweSome · ${data.group.name}`,
-              })}
-              onClick={() => setTimeout(() => onSettle(t), 600)}
-            >
-              Pay via UPI
-            </a>
-          )}
-          {t.to === me && (
-            <button className="btn btn-ghost btn-sm" onClick={() => nudge([t])}>
-              🔔 Nudge
-            </button>
-          )}
-          <button className="btn btn-ghost btn-sm" onClick={() => onSettle(t)}>
-            {canUpi ? 'Mark paid' : 'Settle'}
-          </button>
-        </div>
+  const transferRow = (t: Transfer) => (
+    <div key={`${t.from}-${t.to}`} className="transfer">
+      <div className="row" style={{ gap: 10 }}>
+        <Avatar member={member(t.from)} size="sm" />
+        <span className="faint">→</span>
+        <Avatar member={member(t.to)} size="sm" />
+        <span className="grow" style={{ fontSize: 14 }}>
+          <strong>{label(t.from)}</strong> <span className="muted">{t.from === me ? 'pay' : 'pays'}</span>{' '}
+          <strong>{label(t.to)}</strong>
+        </span>
+        <span className="num" style={{ fontWeight: 700 }}>
+          {formatMoney(fromMinor(t.amount), cur)}
+        </span>
       </div>
-    )
-  }
+      <div className="transfer-actions">
+        {t.to === me && (
+          <button className="btn btn-ghost btn-sm" onClick={() => nudge([t])}>
+            🔔 Nudge
+          </button>
+        )}
+        <button className="btn btn-ghost btn-sm" onClick={() => onSettle(t)}>
+          Mark as settled
+        </button>
+      </div>
+    </div>
+  )
 
   return (
     <div className="stack" style={{ gap: 18 }}>
@@ -610,17 +588,6 @@ function Balances({
         )}
       </section>
 
-      {cur === 'INR' && owedToMe.length > 0 && !meMember.upi_id && (
-        <button className="card flat row" style={{ textAlign: 'left', width: '100%' }} onClick={onProfile}>
-          <span style={{ fontSize: 22 }}>⚡</span>
-          <span className="grow small">
-            <strong>Add your UPI ID</strong>
-            <div className="faint">People who owe you get a one-tap “Pay via UPI” button, and nudges include it.</div>
-          </span>
-          <span className="faint">›</span>
-        </button>
-      )}
-
       <section className="card" style={{ padding: '14px 14px 4px' }}>
         <div className="label" style={{ marginBottom: 4 }}>
           net balances
@@ -631,10 +598,7 @@ function Balances({
             return (
               <div key={m.id} className="list-item">
                 <Avatar member={m} />
-                <span className="grow">
-                  <div className="title">{m.id === me ? `${m.name} (you)` : m.name}</div>
-                  {m.upi_id && <div className="sub">UPI · {m.upi_id}</div>}
-                </span>
+                <span className="grow title">{m.id === me ? `${m.name} (you)` : m.name}</span>
                 <span className={`pill num ${v > 0 ? 'pos' : v < 0 ? 'neg' : ''}`}>
                   {v > 0 ? 'gets back ' : v < 0 ? 'owes ' : 'settled'}
                   {v !== 0 && formatMoney(fromMinor(Math.abs(v)), cur)}

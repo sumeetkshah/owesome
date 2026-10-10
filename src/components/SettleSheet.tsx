@@ -33,7 +33,7 @@ export default function SettleSheet({ code, data, me, initial, onClose, onSaved 
     setBusy(true)
     setError('')
     try {
-      await api.addSettlement(code, from, to, fromMinor(toMinor(value)), paidOn, note.trim() || undefined)
+      await api.addSettlement(code, from, to, fromMinor(toMinor(value)), paidOn, me, note.trim() || undefined)
       toast('Payment recorded')
       onSaved()
     } catch (e) {
@@ -97,7 +97,7 @@ export default function SettleSheet({ code, data, me, initial, onClose, onSaved 
 
         <input
           className="input"
-          placeholder="Note (optional) — e.g. UPI"
+          placeholder="Note (optional) — e.g. paid in cash"
           value={note}
           onChange={(e) => setNote(e.target.value)}
         />

@@ -238,7 +238,7 @@ button:disabled { cursor: not-allowed; opacity: 0.45; }
 .brand { font-family: var(--display); font-weight: 800; font-size: 20px; letter-spacing: -0.02em; background: none; border: 0; padding: 0; }
 .brand span { color: var(--gold); }
 
-.tabs { display: flex; gap: 22px; border-bottom: 1px solid var(--line); margin: 22px 0 16px; }
+.tabs { display: flex; gap: 18px; overflow-x: auto; scrollbar-width: none; border-bottom: 1px solid var(--line); margin: 22px 0 16px; }
 .tabs button {
   background: none; border: 0; padding: 0 0 12px;
   font-size: 12px; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase;

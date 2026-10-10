@@ -8,7 +8,8 @@ Split group expenses on trips and work travel. There are no accounts: create a g
 - **Refunds and income** that flow back to the group
 - **Receipt photos and PDFs** attached to expenses
 - Preset and custom categories, with per-category insights
-- Settle up with the fewest transfers, **UPI pay links** and **WhatsApp/SMS nudges**
+- Settle up with the fewest transfers and **WhatsApp/SMS nudges** (payments happen outside the app; you record them here)
+- **Activity history** of every change, with deleted items restorable and edits revertible
 - **CSV and PDF export**, filtered by person and date range, for reimbursement claims
 - Installable to the home screen (PWA)
 
@@ -18,7 +19,7 @@ Vite, React and TypeScript on the front end, with Supabase Postgres as the back 
 
 ## Security model
 
-All tables have RLS enabled and every client grant is revoked. The client only calls `SECURITY DEFINER` RPCs (`get_group`, `save_expense`, …), and each one is keyed by the group's random 12-character invite code. Anyone holding a group's link can view and edit that group, but nobody can list or reach other groups. Receipts go to a public-read `receipts` storage bucket. Anyone can upload into an existing group's folder, but nobody can list the bucket, and each file path contains a random UUID. The schema is in `supabase/migrations/`.
+All tables have RLS enabled and every client grant is revoked. The client only calls `SECURITY DEFINER` RPCs (`get_group`, `save_expense`, …), and each one is keyed by the group's random 12-character invite code. Anyone holding a group's link can view and edit that group, but nobody can list or reach other groups. Since there are no accounts, every change is written to an `activity` log (attributed to the member the device says it is) so the group can see who did what and undo deletions or edits. Receipts go to a public-read `receipts` storage bucket. Anyone can upload into an existing group's folder, but nobody can list the bucket, and each file path contains a random UUID. The schema is in `supabase/migrations/`.
 
 ## Develop
 

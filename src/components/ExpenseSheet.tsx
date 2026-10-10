@@ -312,7 +312,7 @@ export default function ExpenseSheet({ code, data, me, expense, onClose, onSaved
           // For foreign exact splits keep the entered amount so the expense reopens as typed.
           weight: splitType === 'exact' ? (foreign ? fromMinor(s.minor) : null) : s.weight,
         })),
-      })
+      }, me)
       toast(expense ? 'Saved' : kind === 'refund' ? 'Refund added' : 'Expense added')
       onSaved()
     } catch (e) {
@@ -325,7 +325,7 @@ export default function ExpenseSheet({ code, data, me, expense, onClose, onSaved
     if (!expense) return
     setBusy(true)
     try {
-      await api.deleteExpense(code, expense.id)
+      await api.deleteExpense(code, expense.id, me)
       toast('Deleted')
       onSaved()
     } catch (e) {

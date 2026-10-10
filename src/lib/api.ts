@@ -15,7 +15,6 @@ export interface Member {
   id: string
   name: string
   color: number
-  upi_id: string | null
   created_at: string
 }
 
@@ -80,6 +79,40 @@ export interface Settlement {
   amount: number
   paid_on: string
   note: string | null
+  created_at: string
+}
+
+export type ActivityAction =
+  | 'group.created'
+  | 'group.updated'
+  | 'member.joined'
+  | 'member.renamed'
+  | 'expense.added'
+  | 'expense.updated'
+  | 'expense.deleted'
+  | 'expense.restored'
+  | 'settlement.added'
+  | 'settlement.deleted'
+  | 'settlement.restored'
+
+export interface ActivityEntry {
+  id: string
+  actor: string | null
+  action: ActivityAction
+  target_id: string | null
+  details: {
+    name?: string
+    old_name?: string
+    description?: string
+    old_description?: string
+    amount?: number
+    old_amount?: number
+    kind?: ExpenseKind
+    from?: string
+    to?: string
+    reverted?: boolean
+  }
+  restored_at: string | null
   created_at: string
 }
 
@@ -151,16 +184,18 @@ export const api = {
     }),
   getGroup: async (code: string) => normalise(await rpc<GroupData>('get_group', { p_code: code })),
   addMember: (code: string, name: string) => rpc<Member>('add_member', { p_code: code, p_name: name }),
-  updateMember: (code: string, id: string, name: string, upi: string) =>
-    rpc<Member>('update_member', { p_code: code, p_id: id, p_name: name, p_upi: upi }),
-  updateGroup: (code: string, name: string, emoji: string) =>
-    rpc<void>('update_group', { p_code: code, p_name: name, p_emoji: emoji }),
+  // `actor` is the member this device is using, recorded in the group's activity log.
+  updateMember: (code: string, id: string, name: string, actor: string) =>
+    rpc<Member>('update_member', { p_code: code, p_id: id, p_name: name, p_actor: actor }),
+  updateGroup: (code: string, name: string, emoji: string, actor: string) =>
+    rpc<void>('update_group', { p_code: code, p_name: name, p_emoji: emoji, p_actor: actor }),
   addCategory: (code: string, name: string, emoji: string) =>
     rpc<Category>('add_category', { p_code: code, p_name: name, p_emoji: emoji }),
-  saveExpense: (code: string, expense: ExpenseInput) =>
-    rpc<string>('save_expense', { p_code: code, p_expense: expense }),
-  deleteExpense: (code: string, id: string) => rpc<void>('delete_expense', { p_code: code, p_id: id }),
-  addSettlement: (code: string, from: string, to: string, amount: number, paidOn: string, note?: string) =>
+  saveExpense: (code: string, expense: ExpenseInput, actor: string) =>
+    rpc<string>('save_expense', { p_code: code, p_expense: expense, p_actor: actor }),
+  deleteExpense: (code: string, id: string, actor: string) =>
+    rpc<void>('delete_expense', { p_code: code, p_id: id, p_actor: actor }),
+  addSettlement: (code: string, from: string, to: string, amount: number, paidOn: string, actor: string, note?: string) =>
     rpc<string>('add_settlement', {
       p_code: code,
       p_from: from,
@@ -168,6 +203,19 @@ export const api = {
       p_amount: amount,
       p_paid_on: paidOn,
       p_note: note ?? null,
+      p_actor: actor,
     }),
-  deleteSettlement: (code: string, id: string) => rpc<void>('delete_settlement', { p_code: code, p_id: id }),
+  deleteSettlement: (code: string, id: string, actor: string) =>
+    rpc<void>('delete_settlement', { p_code: code, p_id: id, p_actor: actor }),
+  getActivity: async (code: string) =>
+    (await rpc<ActivityEntry[]>('get_activity', { p_code: code })).map((a) => ({
+      ...a,
+      details: {
+        ...a.details,
+        amount: a.details.amount == null ? undefined : Number(a.details.amount),
+        old_amount: a.details.old_amount == null ? undefined : Number(a.details.old_amount),
+      },
+    })),
+  restoreActivity: (code: string, id: string, actor: string) =>
+    rpc<void>('restore_activity', { p_code: code, p_id: id, p_actor: actor }),
 }
