@@ -1,4 +1,4 @@
-# SplitSmart
+# OweSome
 
 Split group expenses on trips and work travel. There are no accounts: create a group, share the invite link, and each person picks their name. The device remembers who you are.
 

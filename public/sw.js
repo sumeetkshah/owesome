@@ -1,6 +1,6 @@
-// SplitSmart service worker: makes the app installable and lets the shell open offline.
+// OweSome service worker: makes the app installable and lets the shell open offline.
 // App code is cached; group data always comes from the network (it must be fresh).
-const CACHE = 'splitsmart-v1'
+const CACHE = 'owesome-v1'
 const SHELL = ['/', '/manifest.webmanifest', '/favicon.svg', '/icons/icon-192.png']
 
 self.addEventListener('install', (event) => {

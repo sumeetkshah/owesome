@@ -222,7 +222,7 @@ function useShare(code: string, name: string) {
     const url = inviteUrl(code)
     if (navigator.share) {
       try {
-        await navigator.share({ title: `Join ${name} on SplitSmart`, text: `Track our expenses for ${name}:`, url })
+        await navigator.share({ title: `Join ${name} on OweSome`, text: `Track our expenses for ${name}:`, url })
         return
       } catch {
         // dismissed or unsupported — fall back to copying
@@ -569,7 +569,7 @@ function Balances({
                 vpa: payee.upi_id!,
                 name: payee.name,
                 amount: fromMinor(t.amount),
-                note: `SplitSmart · ${data.group.name}`,
+                note: `OweSome · ${data.group.name}`,
               })}
               onClick={() => setTimeout(() => onSettle(t), 600)}
             >

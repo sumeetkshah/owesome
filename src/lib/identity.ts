@@ -9,10 +9,14 @@ export interface SavedGroup {
   lastOpened: number
 }
 
-const KEY = 'splitsmart:groups'
+const KEY = 'owesome:groups'
+const LEGACY_KEY = 'splitsmart:groups' // pre-rename; migrated on first read
 
 export function savedGroups(): SavedGroup[] {
   try {
+    const legacy = localStorage.getItem(LEGACY_KEY)
+    if (legacy && !localStorage.getItem(KEY)) localStorage.setItem(KEY, legacy)
+    if (legacy) localStorage.removeItem(LEGACY_KEY)
     const list = JSON.parse(localStorage.getItem(KEY) ?? '[]') as SavedGroup[]
     return list.sort((a, b) => b.lastOpened - a.lastOpened)
   } catch {

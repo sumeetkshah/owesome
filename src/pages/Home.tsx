@@ -11,7 +11,7 @@ export default function Home() {
   const openLink = () => {
     const m = link.trim().match(/(?:\/g\/)?([a-z0-9]{8,})\/?$/i)
     if (!m) {
-      setLinkError('That doesn’t look like a SplitSmart invite link.')
+      setLinkError('That doesn’t look like an OweSome invite link.')
       return
     }
     navigate(`/g/${m[1].toLowerCase()}`)
@@ -24,11 +24,11 @@ export default function Home() {
       </div>
 
       <section className="card hero stack" style={{ padding: '28px 22px', gap: 18 }}>
-        <span className="label">group expenses, sorted</span>
+        <span className="label">split bills, not friendships</span>
         <h1 className="display h1">
-          Split bills,
+          Who owes what?
           <br />
-          <em>not friendships.</em>
+          <em>Sorted.</em>
         </h1>
         <p className="muted" style={{ margin: 0 }}>
           Trips, offsites, flat dinners. Log who paid, split it any way you like, and settle up in the fewest

@@ -1,6 +1,6 @@
 {
-  "name": "SplitSmart",
-  "short_name": "SplitSmart",
+  "name": "OweSome",
+  "short_name": "OweSome",
   "description": "Split group trip and work-travel expenses. No sign-up, just an invite link.",
   "start_url": "/",
   "scope": "/",

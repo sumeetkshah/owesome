@@ -68,7 +68,7 @@ export function ToastHost() {
 export function Brand({ onClick }: { onClick?: () => void }) {
   return (
     <button className="brand" onClick={onClick}>
-      split<span>smart</span>.
+      owe<span>some.</span>
     </button>
   )
 }

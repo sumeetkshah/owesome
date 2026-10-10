@@ -121,7 +121,7 @@ export default function Report({ code }: { code: string }) {
       <article className="report">
         <header className="report-head">
           <div>
-            <div className="report-kicker">SplitSmart expense report</div>
+            <div className="report-kicker">OweSome expense report</div>
             <h1>
               {data.group.emoji} {data.group.name}
             </h1>

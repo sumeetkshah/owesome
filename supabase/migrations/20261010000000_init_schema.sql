@@ -1,4 +1,4 @@
--- SplitSmart schema.
+-- OweSome schema.
 -- There is no login: every read/write goes through SECURITY DEFINER functions
 -- keyed by a group's unguessable invite code. Tables have RLS on with no
 -- policies, so the public anon key cannot read or write them directly.
