@@ -27,7 +27,7 @@ alter table public.expenses add constraint expenses_split_type_check
 alter table public.expense_payers add column original_amount numeric(14, 2);
 
 alter table public.members
-  add column upi_id text check (upi_id is null or upi_id ~ '^[A-Za-z0-9._-]{2,128}@[A-Za-z0-9.-]{2,64}$');
+  add column upi_id text check (upi_id is null or upi_id ~ '^[A-Za-z0-9._-]{2,256}@[A-Za-z0-9.-]{2,64}$');
 
 -- ---------------------------------------------------------------------------
 -- API
@@ -174,8 +174,7 @@ grant execute on function public.update_member(text, uuid, text, text) to anon, 
 -- Receipts storage
 -- Objects live at `<invite_code>/<uuid>.<ext>`. Uploads are allowed only into a folder named
 -- after an existing group's invite code. The bucket is public-read so images load by URL; paths
--- contain a random UUID and there is no SELECT policy, so nobody can list the bucket. (Storage
--- deletes require SELECT, so removing a receipt only detaches it from the expense.)
+-- contain a random UUID and there is no SELECT policy, so nobody can list the bucket.
 -- ---------------------------------------------------------------------------
 
 insert into storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
@@ -193,3 +192,7 @@ grant execute on function public._receipt_path_ok(text) to anon, authenticated;
 create policy "receipts: upload into a group folder" on storage.objects
   for insert to anon, authenticated
   with check (bucket_id = 'receipts' and public._receipt_path_ok(name));
+
+create policy "receipts: delete from a group folder" on storage.objects
+  for delete to anon, authenticated
+  using (bucket_id = 'receipts' and public._receipt_path_ok(name));
