@@ -10,6 +10,7 @@ Split group expenses on trips and work travel. There are no accounts: create a g
 - Preset and custom categories, with per-category insights
 - Settle up with the fewest transfers and **WhatsApp/SMS nudges** (payments happen outside the app; you record them here)
 - **Activity history** of every change, with deleted items restorable and edits revertible
+- **Remove or merge people**: drop someone who isn't on anything, or merge a duplicate into another member with balances preserved
 - **CSV and PDF export**, filtered by person and date range, for reimbursement claims
 - Installable to the home screen (PWA)
 

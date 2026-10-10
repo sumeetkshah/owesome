@@ -9,6 +9,9 @@ const ICONS: Record<ActivityEntry['action'], string> = {
   'group.updated': '✏️',
   'member.joined': '👋',
   'member.renamed': '✏️',
+  'member.removed': '👋',
+  'member.merged': '🔗',
+  'member.restored': '↩️',
   'expense.added': '➕',
   'expense.updated': '✏️',
   'expense.deleted': '🗑️',
@@ -22,6 +25,8 @@ const UNDO_LABEL: Partial<Record<ActivityEntry['action'], string>> = {
   'expense.deleted': 'Restore',
   'expense.updated': 'Revert edit',
   'settlement.deleted': 'Restore',
+  'member.removed': 'Restore',
+  'member.merged': 'Undo merge',
 }
 
 const localDay = (iso: string) => {
@@ -71,8 +76,9 @@ export default function History({
     )
   }
 
+  const everyone = [...data.members, ...data.formerMembers]
   const name = (id: string | null | undefined) =>
-    id == null ? 'Someone' : id === me ? 'You' : (data.members.find((m) => m.id === id)?.name ?? 'Someone')
+    id == null ? 'Someone' : id === me ? 'You' : (everyone.find((m) => m.id === id)?.name ?? 'Someone')
   const amt = (v: number | undefined) => (v == null ? '' : formatMoney(v, cur))
 
   const describe = (a: ActivityEntry) => {
@@ -87,6 +93,12 @@ export default function History({
         return `joined the group`
       case 'member.renamed':
         return `renamed ${d.old_name} to ${d.name}`
+      case 'member.removed':
+        return `removed ${d.name} from the group`
+      case 'member.merged':
+        return `merged ${d.name} into ${d.into_name}`
+      case 'member.restored':
+        return `brought ${d.name} back`
       case 'expense.added':
         return `added ${what} · ${amt(d.amount)}`
       case 'expense.updated': {
@@ -111,7 +123,7 @@ export default function History({
     setBusy(true)
     try {
       await api.restoreActivity(code, a.id, me)
-      toast(a.action === 'expense.updated' ? 'Edit reverted' : 'Restored')
+      toast(a.action === 'expense.updated' ? 'Edit reverted' : a.action === 'member.merged' ? 'Merge undone' : 'Restored')
       setConfirming(null)
       onRestored()
     } catch (e) {

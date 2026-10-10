@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react'
 import ExpenseSheet from '../components/ExpenseSheet'
 import History from '../components/History'
 import Insights from '../components/Insights'
+import MemberSheet from '../components/MemberSheet'
 import ProfileSheet from '../components/ProfileSheet'
 import SettleSheet from '../components/SettleSheet'
 import { Avatar, Brand } from '../components/ui'
@@ -19,6 +20,7 @@ type SheetState =
   | { kind: 'expense'; expense?: Expense }
   | { kind: 'settle'; initial?: { from: string; to: string; amount: number } }
   | { kind: 'profile' }
+  | { kind: 'member'; member: Member }
   | null
 
 export default function Group({ code }: { code: string }) {
@@ -128,6 +130,7 @@ export default function Group({ code }: { code: string }) {
           data={data}
           me={meMember.id}
           onSettle={(initial) => setSheet({ kind: 'settle', initial })}
+          onMember={(member) => setSheet({ kind: 'member', member })}
         />
       )}
       {tab === 'insights' && <Insights data={data} me={meMember.id} />}
@@ -152,6 +155,9 @@ export default function Group({ code }: { code: string }) {
         <SettleSheet code={code} data={data} me={meMember.id} initial={sheet.initial} onClose={close} onSaved={saved} />
       )}
       {sheet?.kind === 'profile' && <ProfileSheet code={code} member={meMember} onClose={close} onSaved={saved} />}
+      {sheet?.kind === 'member' && (
+        <MemberSheet code={code} data={data} me={meMember.id} member={sheet.member} onClose={close} onSaved={saved} />
+      )}
     </div>
   )
 }
@@ -512,11 +518,13 @@ function Balances({
   data,
   me,
   onSettle,
+  onMember,
 }: {
   code: string
   data: GroupData
   me: string
   onSettle: (t: { from: string; to: string; amount: number }) => void
+  onMember: (m: Member) => void
 }) {
   const cur = data.group.currency
   const net = netBalances(data.members.map((m) => m.id), data.expenses, data.settlements)
@@ -589,21 +597,22 @@ function Balances({
       </section>
 
       <section className="card" style={{ padding: '14px 14px 4px' }}>
-        <div className="label" style={{ marginBottom: 4 }}>
-          net balances
+        <div className="row between" style={{ marginBottom: 4 }}>
+          <div className="label">net balances</div>
+          <span className="faint small">tap someone to rename, merge or remove</span>
         </div>
         <div className="list">
           {data.members.map((m) => {
             const v = net.get(m.id) ?? 0
             return (
-              <div key={m.id} className="list-item">
+              <button key={m.id} className="list-item" onClick={() => onMember(m)}>
                 <Avatar member={m} />
                 <span className="grow title">{m.id === me ? `${m.name} (you)` : m.name}</span>
                 <span className={`pill num ${v > 0 ? 'pos' : v < 0 ? 'neg' : ''}`}>
                   {v > 0 ? 'gets back ' : v < 0 ? 'owes ' : 'settled'}
                   {v !== 0 && formatMoney(fromMinor(Math.abs(v)), cur)}
                 </span>
-              </div>
+              </button>
             )
           })}
         </div>

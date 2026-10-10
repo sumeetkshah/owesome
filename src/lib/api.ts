@@ -17,6 +17,8 @@ export interface Member {
   id: string
   name: string
   color: number
+  /** Set when someone was removed from the group or merged into another member. */
+  removed_at: string | null
   created_at: string
 }
 
@@ -89,6 +91,9 @@ export type ActivityAction =
   | 'group.updated'
   | 'member.joined'
   | 'member.renamed'
+  | 'member.removed'
+  | 'member.merged'
+  | 'member.restored'
   | 'expense.added'
   | 'expense.updated'
   | 'expense.deleted'
@@ -113,6 +118,8 @@ export interface ActivityEntry {
     from?: string
     to?: string
     reverted?: boolean
+    into?: string
+    into_name?: string
   }
   restored_at: string | null
   created_at: string
@@ -120,7 +127,10 @@ export interface ActivityEntry {
 
 export interface GroupData {
   group: Group
+  /** Current members only; everything else in the app works with these. */
   members: Member[]
+  /** Removed or merged members, kept so history can still name them. */
+  formerMembers: Member[]
   categories: Category[]
   expenses: Expense[]
   settlements: Settlement[]
@@ -155,6 +165,8 @@ async function rpc<T>(fn: string, args: Record<string, unknown>): Promise<T> {
 function normalise(data: GroupData): GroupData {
   return {
     ...data,
+    members: data.members.filter((m) => !m.removed_at),
+    formerMembers: data.members.filter((m) => m.removed_at),
     expenses: data.expenses.map((e) => ({
       ...e,
       amount: Number(e.amount),
@@ -209,6 +221,10 @@ export const api = {
     }),
   deleteSettlement: (code: string, id: string, actor: string) =>
     rpc<void>('delete_settlement', { p_code: code, p_id: id, p_actor: actor }),
+  removeMember: (code: string, id: string, actor: string) =>
+    rpc<void>('remove_member', { p_code: code, p_id: id, p_actor: actor }),
+  mergeMember: (code: string, from: string, into: string, actor: string) =>
+    rpc<void>('merge_member', { p_code: code, p_from: from, p_into: into, p_actor: actor }),
   getActivity: async (code: string) =>
     (await rpc<ActivityEntry[]>('get_activity', { p_code: code })).map((a) => ({
       ...a,
