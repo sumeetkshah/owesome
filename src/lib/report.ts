@@ -14,9 +14,16 @@ export function filterExpenses(data: GroupData, f: ReportFilter): Expense[] {
     .sort((a, b) => a.spent_on.localeCompare(b.spent_on))
 }
 
+// Spreadsheets run cells starting with these as formulas, so a description like
+// `=HYPERLINK("http://…")` would turn into a live link. Prefix them with ' to keep them as text,
+// but leave plain numbers (refunds export as e.g. -250.00) alone.
+const FORMULA_START = /^[=+\-@\t\r]/
+const PLAIN_NUMBER = /^-?\d+(\.\d+)?$/
+
 const csvCell = (v: string | number | null | undefined) => {
-  const s = v == null ? '' : String(v)
-  return /[",\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s
+  let s = v == null ? '' : String(v)
+  if (FORMULA_START.test(s) && !PLAIN_NUMBER.test(s)) s = `'${s}`
+  return /[",\r\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s
 }
 
 export function expensesCsv(data: GroupData, expenses: Expense[]) {
